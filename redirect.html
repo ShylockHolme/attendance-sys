@@ -1,52 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Attendance Status</title>
+  <meta charset="UTF-8">
+  <title>Checking Attendance...</title>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 50px;
-      background-color: #f0f0f0;
-    }
-    .message {
-      font-size: 24px;
-      padding: 20px;
-      border-radius: 10px;
-      display: inline-block;
-      margin-top: 50px;
-    }
-    .success {
-      background: #d4edda;
-      color: #155724;
-    }
-    .used {
-      background: #fff3cd;
-      color: #856404;
-    }
-    .error {
-      background: #f8d7da;
-      color: #721c24;
-    }
+    body { font-family: sans-serif; text-align: center; margin-top: 20%; }
+    .status { font-size: 1.5rem; }
   </style>
 </head>
 <body>
-  <div id="msg" class="message">Checking...</div>
+  <div class="status" id="status">Checking...</div>
 
   <script>
+    const sheetdbApi = "https://sheetdb.io/api/v1/rbn1te68e6jxv"; // 
     const params = new URLSearchParams(window.location.search);
-    const status = params.get("status");
-    const msgDiv = document.getElementById("msg");
+    const id = params.get("id");
+    const statusEl = document.getElementById("status");
 
-    if (status === "success") {
-      msgDiv.innerText = "✅ Successful! You're Welcome";
-      msgDiv.classList.add("success");
-    } else if (status === "alreadyused") {
-      msgDiv.innerText = "⚠️ Card Already Used";
-      msgDiv.classList.add("used");
+    if (!id) {
+      statusEl.innerText = "Invalid QR Code: No ID found.";
     } else {
-      msgDiv.innerText = "❌ Guest ID Not Found";
-      msgDiv.classList.add("error");
+      fetch(`${sheetdbApi}/search?GuestID=${id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.length === 0) {
+            statusEl.innerText = "Invalid Card: Guest ID not found.";
+          } else {
+            const guest = data[0];
+            if (guest.Status === "Present") {
+              statusEl.innerText = "Card Already Used";
+            } else {
+              // Update sheet to mark as Present
+              const updateData = {
+                data: {
+                  "Check-In Time": new Date().toISOString(),
+                  "Status": "Present"
+                }
+              };
+
+              fetch(`${sheetdbApi}/GuestID/${id}`, {
+                method: "PATCH",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData)
+              })
+              .then(() => {
+                statusEl.innerText = "✅ Successful! You're Welcome 🎉";
+              })
+              .catch(() => {
+                statusEl.innerText = "Something went wrong while updating.";
+              });
+            }
+          }
+        })
+        .catch(() => {
+          statusEl.innerText = "Connection error. Please try again.";
+        });
     }
   </script>
 </body>
