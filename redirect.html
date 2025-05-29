@@ -12,7 +12,7 @@
   <div class="status" id="status">Checking...</div>
 
   <script>
-    const sheetdbApi = "https://sheetdb.io/api/v1/rbn1te68e6jxv"; // 
+    const sheetdbApi = "https://sheetdb.io/api/v1/rbn1te68e6jxv";
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
     const statusEl = document.getElementById("status");
@@ -28,12 +28,11 @@
           } else {
             const guest = data[0];
             if (guest.Status === "Present") {
-              statusEl.innerText = "Card Already Used";
+              statusEl.innerText = "❗ Card Already Used";
             } else {
-              // Update sheet to mark as Present
               const updateData = {
                 data: {
-                  "Check-In Time": new Date().toISOString(),
+                  "Check-In Time": new Date().toLocaleString(),
                   "Status": "Present"
                 }
               };
@@ -43,6 +42,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updateData)
               })
+              .then(res => res.json())
               .then(() => {
                 statusEl.innerText = "✅ Successful! You're Welcome 🎉";
               })
